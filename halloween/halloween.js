@@ -1,12 +1,14 @@
-generate_pumpkin = function(e) {
+var generate_pumpkin = function(e) {
     var canvas = document.getElementById('canvas');
     if (!canvas.getContext){
         alert('Your browser does not support canvas.');
         return;
     }
+    console.log('generating!');
     var ctx = canvas.getContext('2d');
     var cw = canvas.width;
     var ch = canvas.height;
+    ctx.clearRect(-1, -1, cw+1, ch+1);
 
     var seed = (new Date()).getTime();
     if (window.location.hash !== '') {
@@ -36,7 +38,12 @@ generate_pumpkin = function(e) {
     generate_body(ctx, cw, ch, rng, p);
     generate_stripes(ctx, cw, ch, rng, p);
     generate_stump(ctx, cw, ch, rng, p);
+
+    ctx.rotate((Math.PI/180)*-p.rotation_angle);
+    ctx.translate(0,5*p.rotation_angle);
+    return false;
 };
+
 generate_stump = function(ctx, cw, ch, rng, p) {
     console.log('Generating stump of pumpkin...');
     if (rng.next() < 0.1) {
@@ -44,8 +51,9 @@ generate_stump = function(ctx, cw, ch, rng, p) {
         return;
     }
 
-    var stump_leaning = rng.next() > 0.5 ? 1 : -1,
-        stump_flip = rng.next() > 0.5 ? 1 : -1;
+    var stump_length = rng.nextInt(10, 40),
+        stump_upper_width = rng.nextInt(0, 15),
+        stump_lower_width = rng.nextInt(3, 15);
 
     var gradient = ctx.createLinearGradient(
         p.start.x - 10, p.stop.y,
@@ -66,19 +74,44 @@ generate_stump = function(ctx, cw, ch, rng, p) {
     ctx.fillStyle = gradient;
 
     ctx.beginPath();
-    ctx.moveTo(p.start.x, stump_start_y);
-    var stump_start_y = p.start.y + rng.nextInt(0, 20) - 30;
+    ctx.moveTo(p.start.x - stump_lower_width / 2, p.start.y);
     ctx.quadraticCurveTo(
-            p.start.x + rng.nextInt(10, 20) * stump_leaning, p.start.y - 30,
-            p.start.x - rng.nextInt(10, 30), p.start.y - rng.nextInt(20, 40)
+        p.start.x - stump_upper_width / 2, p.start.y - stump_length,
+        p.start.x - stump_upper_width / 2, p.start.y - stump_length
     );
+    ctx.lineTo(p.start.x + stump_upper_width / 2, p.start.y - stump_length);
     ctx.quadraticCurveTo(
-            p.start.x - rng.nextInt(1, 10) * stump_leaning, p.start.y + 30,
-            p.start.x, stump_start_y
+        p.start.x + stump_lower_width / 2, p.start.y,
+        p.start.x + stump_lower_width / 2, p.start.y
     );
     ctx.fill();
+    ctx.closePath();
+
+    if (rng.next() < 0.3) {
+        console.log('No stump cut for this one.');
+        return;
+    }
+    ctx.beginPath();
+    if (rng.next() < 0.6) {
+        // otherwise reuse gradient of stump, cut is facing away
+        red = rng.nextInt(200, 250);
+        green = rng.nextInt(120, 150);
+        ctx.fillStyle = 'rgb(' + red + ', ' + green + ', 50)';
+    }
+    ctx.ellipse(
+        p.start.x, // center x
+        p.start.y - stump_length, // center y
+        stump_upper_width / 2, // radius x
+        rng.nextInt(1, stump_upper_width / 3), // radius y
+        rng.nextInt(0, 30) * Math.PI/180, // rotation
+        0, // start angle
+        2 * Math.PI // end angle
+    );
+    ctx.fill();
+    ctx.closePath();
 }
-generate_stripes = function(ctx, cw, ch, rng, p) {
+
+var generate_stripes = function(ctx, cw, ch, rng, p) {
     console.log('Generating vertical stripes of pumpkin...');
     if (rng.next() < 0.1) {
         console.log('No stripes for this one.');
@@ -115,7 +148,8 @@ generate_stripes = function(ctx, cw, ch, rng, p) {
         end_reached = p.width_modifier + p.width_modifier * (x + 1) > cw - p.width_modifier;
     }
 }
-generate_body = function(ctx, cw, ch, rng, p) {
+
+var generate_body = function(ctx, cw, ch, rng, p) {
     console.log('Generating body and color of pumpkin...');
 
     // x1 and x2 for gradient
@@ -149,4 +183,9 @@ generate_body = function(ctx, cw, ch, rng, p) {
     ctx.fill();
 };
 
-window.onload = generate_pumpkin;
+var initialize_everything = function(e) {
+    document.getElementById('btn_generate').onclick = generate_pumpkin;
+    generate_pumpkin(e);
+}
+
+window.onload = initialize_everything;

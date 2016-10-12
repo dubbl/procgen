@@ -12,3 +12,16 @@ body {
   display: block;
   margin: 0 auto;
 }
+
+h1 a {
+  color: #fff;
+  background: #333;
+  padding: 5px;
+  border-radius: 5px;
+  display: inline-block;
+  text-decoration: none;
+}
+
+h1 a:active, a:focus {
+  box-shadow: 5px;
+}
