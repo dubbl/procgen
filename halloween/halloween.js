@@ -39,8 +39,8 @@ var generate_pumpkin = function(e) {
     generate_stripes(ctx, cw, ch, rng, p);
     generate_stump(ctx, cw, ch, rng, p);
 
+    ctx.translate(0, 5*p.rotation_angle);
     ctx.rotate((Math.PI/180)*-p.rotation_angle);
-    ctx.translate(0,5*p.rotation_angle);
     return false;
 };
 
