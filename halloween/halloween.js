@@ -49,8 +49,10 @@ generate_stump = function(ctx, cw, ch, rng, p) {
     }
 
     var stump_length = rng.nextInt(10, 40),
-        stump_upper_width = rng.nextInt(0, 15),
-        stump_lower_width = rng.nextInt(3, 15);
+        stump_upper_width = rng.nextInt(1, 15),
+        stump_lower_width = rng.nextInt(3, 15),
+        stump_curve_x = rng.nextInt(stump_upper_width, 5),
+        stump_curve_x_direction = rng.next() > 0.5 ? 1 : -1;
 
     var gradient = ctx.createLinearGradient(
         p.start.x - 10, p.stop.y,
@@ -73,12 +75,12 @@ generate_stump = function(ctx, cw, ch, rng, p) {
     ctx.beginPath();
     ctx.moveTo(p.start.x - stump_lower_width / 2, p.start.y);
     ctx.quadraticCurveTo(
-        p.start.x - stump_upper_width / 2, p.start.y - stump_length,
+        p.start.x - stump_upper_width / 2 - stump_curve_x * stump_curve_x_direction, p.start.y - stump_length,
         p.start.x - stump_upper_width / 2, p.start.y - stump_length
     );
     ctx.lineTo(p.start.x + stump_upper_width / 2, p.start.y - stump_length);
     ctx.quadraticCurveTo(
-        p.start.x + stump_lower_width / 2, p.start.y,
+        p.start.x + stump_lower_width / 2 - stump_curve_x * stump_curve_x_direction, p.start.y,
         p.start.x + stump_lower_width / 2, p.start.y
     );
     ctx.fill();
@@ -100,7 +102,7 @@ generate_stump = function(ctx, cw, ch, rng, p) {
         p.start.y - stump_length, // center y
         stump_upper_width / 2, // radius x
         rng.nextInt(1, stump_upper_width / 3), // radius y
-        rng.nextInt(0, 30) * Math.PI/180, // rotation
+        rng.nextInt(0, 20) * Math.PI/180, // rotation
         0, // start angle
         2 * Math.PI // end angle
     );
