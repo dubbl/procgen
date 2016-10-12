@@ -1,21 +1,18 @@
-var generate_pumpkin = function(e) {
+var generate_pumpkin = function(seed) {
     var canvas = document.getElementById('canvas');
     if (!canvas.getContext){
         alert('Your browser does not support canvas.');
         return;
     }
-    console.log('generating!');
     var ctx = canvas.getContext('2d');
     var cw = canvas.width;
     var ch = canvas.height;
     ctx.clearRect(-1, -1, cw+1, ch+1);
 
-    var seed = (new Date()).getTime();
-    if (window.location.hash !== '') {
-        console.log(window.location.hash.substr(1));
-        var seed = parseInt(window.location.hash.substr(1));
+    if (typeof seed !== 'number') {
+        seed = (new Date()).getTime();
     }
-    //window.location.hash = seed.toString();
+    window.location.hash = seed.toString();
     var rng = CustomRandom(seed);
 
     var p = {}; // pumpkin object
@@ -185,7 +182,11 @@ var generate_body = function(ctx, cw, ch, rng, p) {
 
 var initialize_everything = function(e) {
     document.getElementById('btn_generate').onclick = generate_pumpkin;
-    generate_pumpkin(e);
+    var seed = e;
+    if (window.location.hash !== '') {
+        seed = parseInt(window.location.hash.substr(1));
+    }
+    generate_pumpkin(seed);
 }
 
 window.onload = initialize_everything;
