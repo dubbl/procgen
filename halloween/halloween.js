@@ -27,6 +27,13 @@ var generate_pumpkin = function(seed) {
     p.stop = {};
     p.stop.x = p.start.x;
     p.stop.y = p.start.y + p.height;
+    if (rng.next() < 0.8) {
+        p.inner_color = 'rgb(200, 200, 50)';
+    } else {
+        p.inner_color = 'rgb(0, 0, 0)';
+    }
+    ctx.shadowBlur = 0;
+    ctx.shadowColor = "rgba(0, 0, 0, 0.5)";
 
     p.rotation_angle = rng.nextInt(0, 7);
     ctx.rotate((Math.PI/180)*p.rotation_angle);
@@ -36,25 +43,55 @@ var generate_pumpkin = function(seed) {
     generate_stripes(ctx, cw, ch, rng, p);
     generate_stump(ctx, cw, ch, rng, p);
     generate_eyes(ctx, cw, ch, rng, p);
+    generate_nose(ctx, cw, ch, rng, p);
 
     ctx.translate(0, 5*p.rotation_angle);
     ctx.rotate((Math.PI/180)*-p.rotation_angle);
     return false;
 };
 
-generate_eyes = function(ctx, cw, ch, rng, p) {
+var generate_nose = function(ctx, cw, ch, rng, p) {
+    console.log('Generating nose of pumpkin...');
+    if (rng.next() < 0.1 || !p.has_eyes) {
+        console.log('No nose for this one.');
+        return;
+    }
+    ctx.fillStyle = p.inner_color;
+    p.nose_type = rng.next();
+    ctx.beginPath();
+    if (p.nose_type < 1) {
+        // draw circle nose
+        p.nose_radius_x = p.nose_radius_y = rng.nextInt(5, p.eye_radius_x / 2);
+        ctx.shadowOffsetX = 0;
+        ctx.shadowOffsetY = 2;
+        ctx.ellipse(
+            p.start.x, // center x
+            p.start.y + p.height / 2, // center y
+            p.nose_radius_x, // radius x
+            p.nose_radius_y, // radius y
+            0, // rotation
+            0, // start angle
+            2 * Math.PI // end angle
+        );
+        ctx.fill();
+    }
+    ctx.closePath();
+    ctx.shadowOffsetY = 0;
+}
+
+var generate_eyes = function(ctx, cw, ch, rng, p) {
     console.log('Generating eyes of pumpkin...');
     if (rng.next() < 0.1) {
         console.log('No eyes for this one.');
         return;
     }
-
+    p.has_eyes = true;
     p.eye_center_offset = rng.nextInt(5, 20);
 
     p.eye_type = rng.next();
     if (p.eye_type < 1) {
         // draw circle eyes
-        var eye_radius_x = eye_radius_y = rng.nextInt(10, 20);
+        p.eye_radius_x = p.eye_radius_y = rng.nextInt(10, 20);
         var eye_radius_y_factor = 1;
         var eye_angryness = 0;
         if (rng.next() < 0.1) {
@@ -65,11 +102,7 @@ generate_eyes = function(ctx, cw, ch, rng, p) {
             eye_angryness = 0.5 + rng.next();
         }
         ctx.beginPath();
-        if (rng.next() < 0.7) {
-            ctx.fillStyle = 'rgb(200, 200, 50)';
-        } else {
-            ctx.fillStyle = 'rgb(0, 0, 0)';
-        }
+        ctx.fillStyle = p.inner_color;
         ctx.shadowOffsetX = -2;
         ctx.shadowOffsetY = 2;
         ctx.shadowBlur = 0;
@@ -77,24 +110,24 @@ generate_eyes = function(ctx, cw, ch, rng, p) {
 
         // draw right eye
         ctx.ellipse(
-            p.start.x - eye_radius_x * 1.5, // center x
+            p.start.x - p.eye_radius_x * 1.5, // center x
             p.start.y + p.height / 3, // center y
-            eye_radius_x, // radius x
-            eye_radius_y, // radius y
+            p.eye_radius_x, // radius x
+            p.eye_radius_y, // radius y
             0, // rotation
             0, // start angle
             (2 - eye_angryness) * Math.PI // end angle
         );
         ctx.fill();
         ctx.closePath();
-        eye_radius_y *= eye_radius_y_factor;
+        p.eye_radius_y *= eye_radius_y_factor;
         ctx.shadowOffsetX *= -1;
         ctx.beginPath();
         ctx.ellipse(
-            p.start.x + eye_radius_x * 1.5, // center x
-            p.start.y + p.height / 3 - (eye_radius_y - eye_radius_x),
-            eye_radius_x, // radius x
-            eye_radius_y, // radius y
+            p.start.x + p.eye_radius_x * 1.5, // center x
+            p.start.y + p.height / 3 - (p.eye_radius_y - p.eye_radius_x),
+            p.eye_radius_x, // radius x
+            p.eye_radius_y, // radius y
             rng.nextInt(0, 10) * Math.PI/180, // rotation
             (eye_angryness - 2) * Math.PI, // start angle
             0, // end angle

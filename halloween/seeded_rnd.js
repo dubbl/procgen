@@ -24,6 +24,9 @@ var CustomRandom = function(nseed) {
       }
     },
     nextInt : function(min, max) {
+      if (min > max) {
+        return Math.round(this.next(max, min));
+      }
       return Math.round(this.next(min, max));
     }
   }
