@@ -35,13 +35,83 @@ var generate_pumpkin = function(seed) {
     generate_body(ctx, cw, ch, rng, p);
     generate_stripes(ctx, cw, ch, rng, p);
     generate_stump(ctx, cw, ch, rng, p);
+    generate_eyes(ctx, cw, ch, rng, p);
 
     ctx.translate(0, 5*p.rotation_angle);
     ctx.rotate((Math.PI/180)*-p.rotation_angle);
     return false;
 };
 
-generate_stump = function(ctx, cw, ch, rng, p) {
+generate_eyes = function(ctx, cw, ch, rng, p) {
+    console.log('Generating eyes of pumpkin...');
+    if (rng.next() < 0.1) {
+        console.log('No eyes for this one.');
+        return;
+    }
+
+    p.eye_center_offset = rng.nextInt(5, 20);
+
+    p.eye_type = rng.next();
+    if (p.eye_type < 1) {
+        // draw circle eyes
+        var eye_radius_x = eye_radius_y = rng.nextInt(10, 20);
+        var eye_radius_y_factor = 1;
+        var eye_angryness = 0;
+        if (rng.next() < 0.1) {
+            // go for a o.0 effect
+            eye_radius_y_factor = 1.35;
+        } else if (rng.next() < 0.4) {
+            // angry eyes >.<
+            eye_angryness = 0.5 + rng.next();
+        }
+        ctx.beginPath();
+        if (rng.next() < 0.7) {
+            ctx.fillStyle = 'rgb(200, 200, 50)';
+        } else {
+            ctx.fillStyle = 'rgb(0, 0, 0)';
+        }
+        ctx.shadowOffsetX = -2;
+        ctx.shadowOffsetY = 2;
+        ctx.shadowBlur = 0;
+        ctx.shadowColor = "rgba(0, 0, 0, 0.5)";
+
+        // draw right eye
+        ctx.ellipse(
+            p.start.x - eye_radius_x * 1.5, // center x
+            p.start.y + p.height / 3, // center y
+            eye_radius_x, // radius x
+            eye_radius_y, // radius y
+            0, // rotation
+            0, // start angle
+            (2 - eye_angryness) * Math.PI // end angle
+        );
+        ctx.fill();
+        ctx.closePath();
+        eye_radius_y *= eye_radius_y_factor;
+        ctx.shadowOffsetX *= -1;
+        ctx.beginPath();
+        ctx.ellipse(
+            p.start.x + eye_radius_x * 1.5, // center x
+            p.start.y + p.height / 3 - (eye_radius_y - eye_radius_x),
+            eye_radius_x, // radius x
+            eye_radius_y, // radius y
+            rng.nextInt(0, 10) * Math.PI/180, // rotation
+            (eye_angryness - 2) * Math.PI, // start angle
+            0, // end angle
+            true // counterclockwise
+        );
+        ctx.fill();
+        ctx.closePath();
+        ctx.shadowOffsetX = 0;
+        ctx.shadowOffsetY = 0;
+    } else if (p.eye_type < 0.66) {
+        // draw ellipse eye
+    } else {
+
+    }
+}
+
+var generate_stump = function(ctx, cw, ch, rng, p) {
     console.log('Generating stump of pumpkin...');
     if (rng.next() < 0.1) {
         console.log('No stump for this one.');
@@ -121,12 +191,14 @@ var generate_stripes = function(ctx, cw, ch, rng, p) {
         p.start.x, p.start.y,
         p.start.x, p.stop.y
     );
-    var color1 = 'rgba(0, 0, 0, 1)',
+    var color1 = 'rgba(0, 0, 0, 0.75)',
         color2 = 'rgba(0, 0, 0, 0)';
         transparent_area = rng.next(0.1, 0.5);
     gradient.addColorStop(0, color1);
-    gradient.addColorStop(transparent_area, color2);
-    gradient.addColorStop(1 - transparent_area, color2);
+    if (rng.next() < 0.9) {
+        gradient.addColorStop(transparent_area, color2);
+        gradient.addColorStop(1 - transparent_area, color2);
+    }
     gradient.addColorStop(1, color1);
     ctx.strokeStyle = gradient;
 
