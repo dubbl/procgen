@@ -57,24 +57,43 @@ var generate_nose = function(ctx, cw, ch, rng, p) {
         return;
     }
     ctx.fillStyle = p.inner_color;
+    ctx.shadowOffsetY = 2;
     p.nose_type = rng.next();
+    p.nose_start = {}
+    p.nose_start.x = p.start.x
+    p.nose_start.y = p.start.y + p.height / 2
     ctx.beginPath();
-    if (p.nose_type < 1) {
+    if (p.nose_type < 0.5) {
         // draw circle nose
         p.nose_radius_x = p.nose_radius_y = rng.nextInt(5, p.eye_radius_x / 2);
-        ctx.shadowOffsetX = 0;
         ctx.shadowOffsetY = 2;
         ctx.ellipse(
-            p.start.x, // center x
-            p.start.y + p.height / 2, // center y
+            p.nose_start.x, // center x
+            p.nose_start.y, // center y
             p.nose_radius_x, // radius x
             p.nose_radius_y, // radius y
             0, // rotation
             0, // start angle
             2 * Math.PI // end angle
         );
+    } else {
+        p.nose_h = rng.nextInt(5, 20);
+        p.nose_w = rng.nextInt(5, 20);
+        p.nose_dir = rng.next();
+        // draw triangular nose
+        if (p.nose_dir < 0.8) {
+            ctx.moveTo(p.nose_start.x, p.nose_start.y);
+        } else {
+            p.nose_start.y -= p.nose_h; 
+        }
+        ctx.lineTo(p.start.x - p.nose_w / 2, p.nose_start.y + p.nose_h);
+        ctx.lineTo(p.start.x + p.nose_w / 2, p.nose_start.y + p.nose_h);
         ctx.fill();
+        if (p.nose_dir > 0.8) {
+            ctx.lineTo(p.nose_start.x, p.nose_start.y + p.nose_h * 2);
+        }
     }
+    ctx.fill();
     ctx.closePath();
     ctx.shadowOffsetY = 0;
 }
