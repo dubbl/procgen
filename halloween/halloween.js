@@ -35,9 +35,10 @@ var generate_pumpkin = function(seed) {
     ctx.shadowBlur = 0;
     ctx.shadowColor = "rgba(0, 0, 0, 0.5)";
 
-    p.rotation_angle = rng.nextInt(0, 7);
-    ctx.rotate((Math.PI/180)*p.rotation_angle);
-    ctx.translate(0,-5*p.rotation_angle);
+    p.rotation_angle = rng.nextInt(0, 10);
+    p.rotation_dir = rng.next() >= 0.5 ? 1: -1;
+    ctx.rotate((Math.PI / 180) * p.rotation_angle * p.rotation_dir);
+    ctx.translate(0, -5 * p.rotation_angle * p.rotation_dir);
 
     generate_body(ctx, cw, ch, rng, p);
     generate_stripes(ctx, cw, ch, rng, p);
@@ -45,8 +46,8 @@ var generate_pumpkin = function(seed) {
     generate_eyes(ctx, cw, ch, rng, p);
     generate_nose(ctx, cw, ch, rng, p);
 
-    ctx.translate(0, 5*p.rotation_angle);
-    ctx.rotate((Math.PI/180)*-p.rotation_angle);
+    ctx.translate(0, 5 * p.rotation_angle * p.rotation_dir);
+    ctx.rotate((Math.PI/180) * -p.rotation_angle * p.rotation_dir);
     return false;
 };
 
@@ -113,7 +114,7 @@ var generate_eyes = function(ctx, cw, ch, rng, p) {
     }
     p.has_eyes = true;
     p.eye_center_offset = rng.nextInt(5, 20);
-    p.eye_width_x = p.eye_width_y = rng.nextInt(5, 20);
+    p.eye_width_x = p.eye_width_y = rng.nextInt(5, 15);
     p.eye_width_y_factor = 1;
     p.eye_type = rng.next();
     p.left_eye_start = {
