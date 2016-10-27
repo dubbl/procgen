@@ -56,17 +56,21 @@ var generate_nose = function(ctx, cw, ch, rng, p) {
         console.log('No nose for this one.');
         return;
     }
+    ctx.beginPath();
     ctx.fillStyle = p.inner_color;
     ctx.shadowOffsetY = 2;
     p.nose_type = rng.next();
+    p.nose_radius_x = p.nose_radius_y = rng.nextInt(5, p.eye_width_x);
     p.nose_start = {}
-    p.nose_start.x = p.start.x
-    p.nose_start.y = p.start.y + p.height / 2
-    ctx.beginPath();
+    p.nose_start.x = p.start.x;
+    // draw nose underneath the eyes
+    p.nose_start.y = Math.max(
+        p.start.y + p.height / 2 - (p.eye_width_y - p.eye_width_x),
+        p.left_eye_start.y + p.eye_width_y + p.nose_radius_y
+    );
     if (p.nose_type < 0.5) {
         // draw circle nose
-        p.nose_radius_x = p.nose_radius_y = rng.nextInt(5, p.eye_radius_x / 2);
-        ctx.shadowOffsetY = 2;
+        p.nose_radius_x = p.nose_radius_y = rng.nextInt(5, p.eye_width_x / 2);
         ctx.ellipse(
             p.nose_start.x, // center x
             p.nose_start.y, // center y
@@ -77,26 +81,29 @@ var generate_nose = function(ctx, cw, ch, rng, p) {
             2 * Math.PI // end angle
         );
     } else {
-        p.nose_h = rng.nextInt(5, 20);
-        p.nose_w = rng.nextInt(5, 20);
-        p.nose_dir = rng.next();
-        // draw triangular nose
-        if (p.nose_dir < 0.8) {
-            ctx.moveTo(p.nose_start.x, p.nose_start.y);
-        } else {
-            p.nose_start.y -= p.nose_h; 
-        }
-        ctx.lineTo(p.start.x - p.nose_w / 2, p.nose_start.y + p.nose_h);
-        ctx.lineTo(p.start.x + p.nose_w / 2, p.nose_start.y + p.nose_h);
-        ctx.fill();
-        if (p.nose_dir > 0.8) {
-            ctx.lineTo(p.nose_start.x, p.nose_start.y + p.nose_h * 2);
-        }
+        p.nose_rotated = rng.next() > 0.5;
+        draw_triangle(ctx, p.nose_start, p.nose_radius_x, p.nose_radius_y, p.nose_rotated);
     }
     ctx.fill();
     ctx.closePath();
     ctx.shadowOffsetY = 0;
 }
+
+var draw_triangle = function(ctx, start, width, height, rotated) {
+    if (!rotated) {
+        ctx.moveTo(start.x, start.y);
+    } else {
+        start.y -= height;
+    }
+    ctx.lineTo(start.x - width, start.y + height);
+    ctx.lineTo(start.x + width, start.y + height);
+    ctx.fill();
+    if (rotated) {
+        ctx.lineTo(start.x, start.y + height * 2);
+    }
+    ctx.fill();
+    ctx.closePath();
+};
 
 var generate_eyes = function(ctx, cw, ch, rng, p) {
     console.log('Generating eyes of pumpkin...');
@@ -106,62 +113,75 @@ var generate_eyes = function(ctx, cw, ch, rng, p) {
     }
     p.has_eyes = true;
     p.eye_center_offset = rng.nextInt(5, 20);
-
+    p.eye_width_x = p.eye_width_y = rng.nextInt(5, 20);
+    p.eye_width_y_factor = 1;
     p.eye_type = rng.next();
-    if (p.eye_type < 1) {
+    p.left_eye_start = {
+        x: p.start.x - p.eye_width_x * 1.5,
+        y: p.start.y + p.height / 3 - (p.eye_width_y - p.eye_width_x),
+    };
+    p.right_eye_start = {
+        x: p.start.x + p.eye_width_x * 1.5,
+        y: p.start.y + p.height / 3 - (p.eye_width_y - p.eye_width_x),
+    };
+
+    ctx.beginPath();
+    ctx.fillStyle = p.inner_color;
+    ctx.shadowOffsetX = -2;
+    ctx.shadowOffsetY = 2;
+    ctx.shadowBlur = 0;
+    ctx.shadowColor = "rgba(0, 0, 0, 0.5)";
+
+    if (p.eye_type < 0.5) {
         // draw circle eyes
-        p.eye_radius_x = p.eye_radius_y = rng.nextInt(10, 20);
-        var eye_radius_y_factor = 1;
+        p.eye_width_y_factor = 1;
         var eye_angryness = 0;
         if (rng.next() < 0.1) {
             // go for a o.0 effect
-            eye_radius_y_factor = 1.35;
-        } else if (rng.next() < 0.4) {
+            p.eye_width_y_factor = 1.35;
+        } else if (rng.next() < 0.6) {
             // angry eyes >.<
             eye_angryness = 0.5 + rng.next();
         }
-        ctx.beginPath();
-        ctx.fillStyle = p.inner_color;
-        ctx.shadowOffsetX = -2;
-        ctx.shadowOffsetY = 2;
-        ctx.shadowBlur = 0;
-        ctx.shadowColor = "rgba(0, 0, 0, 0.5)";
-
-        // draw right eye
+        // draw left eye
         ctx.ellipse(
-            p.start.x - p.eye_radius_x * 1.5, // center x
+            p.start.x - p.eye_width_x * 1.5, // center x
             p.start.y + p.height / 3, // center y
-            p.eye_radius_x, // radius x
-            p.eye_radius_y, // radius y
+            p.eye_width_x, // radius x
+            p.eye_width_y, // radius y
             0, // rotation
             0, // start angle
             (2 - eye_angryness) * Math.PI // end angle
         );
         ctx.fill();
         ctx.closePath();
-        p.eye_radius_y *= eye_radius_y_factor;
+        p.eye_width_y *= p.eye_width_y_factor;
         ctx.shadowOffsetX *= -1;
         ctx.beginPath();
         ctx.ellipse(
-            p.start.x + p.eye_radius_x * 1.5, // center x
-            p.start.y + p.height / 3 - (p.eye_radius_y - p.eye_radius_x),
-            p.eye_radius_x, // radius x
-            p.eye_radius_y, // radius y
+            p.start.x + p.eye_width_x * 1.5, // center x
+            p.start.y + p.height / 3 - (p.eye_width_y - p.eye_width_x),
+            p.eye_width_x, // radius x
+            p.eye_width_y, // radius y
             rng.nextInt(0, 10) * Math.PI/180, // rotation
             (eye_angryness - 2) * Math.PI, // start angle
             0, // end angle
             true // counterclockwise
         );
-        ctx.fill();
-        ctx.closePath();
-        ctx.shadowOffsetX = 0;
-        ctx.shadowOffsetY = 0;
-    } else if (p.eye_type < 0.66) {
-        // draw ellipse eye
     } else {
-
+        p.eye_rotated = rng.next() > 0.3;
+        p.eye_width_x = p.eye_width_y *= 1.3;
+        draw_triangle(ctx, p.left_eye_start, p.eye_width_x, p.eye_width_y, p.eye_rotated);
+        ctx.closePath();
+        ctx.beginPath();
+        draw_triangle(ctx, p.right_eye_start, p.eye_width_x, p.eye_width_y, p.eye_rotated);
+        ctx.closePath();
     }
-}
+    ctx.fill();
+    ctx.closePath();
+    ctx.shadowOffsetX = 0;
+    ctx.shadowOffsetY = 0;
+};
 
 var generate_stump = function(ctx, cw, ch, rng, p) {
     console.log('Generating stump of pumpkin...');
@@ -230,7 +250,7 @@ var generate_stump = function(ctx, cw, ch, rng, p) {
     );
     ctx.fill();
     ctx.closePath();
-}
+};
 
 var generate_stripes = function(ctx, cw, ch, rng, p) {
     console.log('Generating vertical stripes of pumpkin...');
@@ -270,7 +290,7 @@ var generate_stripes = function(ctx, cw, ch, rng, p) {
          */
         end_reached = p.width_modifier + p.width_modifier * (x + 1) > cw - p.width_modifier;
     }
-}
+};
 
 var generate_body = function(ctx, cw, ch, rng, p) {
     console.log('Generating body and color of pumpkin...');
@@ -313,6 +333,6 @@ var initialize_everything = function(e) {
         seed = parseInt(window.location.hash.substr(1));
     }
     generate_pumpkin(seed);
-}
+};
 
 window.onload = initialize_everything;
