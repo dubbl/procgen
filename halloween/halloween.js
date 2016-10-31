@@ -30,7 +30,7 @@ var generate_pumpkin = function(seed) {
     if (rng.next() < 0.8) {
         p.inner_color = 'rgb(200, 200, 50)';
     } else {
-        p.inner_color = 'rgb(0, 0, 0)';
+        p.inner_color = 'rgb(10, 10, 10)';
     }
     ctx.shadowBlur = 0;
     ctx.shadowColor = "rgba(0, 0, 0, 0.5)";
@@ -128,7 +128,6 @@ var generate_eyes = function(ctx, cw, ch, rng, p) {
 
     ctx.beginPath();
     ctx.fillStyle = p.inner_color;
-    ctx.shadowOffsetX = -2;
     ctx.shadowOffsetY = 2;
     ctx.shadowBlur = 0;
     ctx.shadowColor = "rgba(0, 0, 0, 0.5)";
@@ -136,6 +135,7 @@ var generate_eyes = function(ctx, cw, ch, rng, p) {
     if (p.eye_type < 0.5) {
         // draw circle eyes
         p.eye_width_y_factor = 1;
+        ctx.shadowOffsetX = -2;
         var eye_angryness = 0;
         if (rng.next() < 0.1) {
             // go for a o.0 effect
@@ -170,10 +170,12 @@ var generate_eyes = function(ctx, cw, ch, rng, p) {
             true // counterclockwise
         );
     } else {
+        ctx.shadowOffsetX = -1;
         p.eye_rotated = rng.next() > 0.3;
         p.eye_width_x = p.eye_width_y *= 1.3;
         draw_triangle(ctx, p.left_eye_start, p.eye_width_x, p.eye_width_y, p.eye_rotated);
         ctx.closePath();
+        ctx.shadowOffsetX *= -1;
         ctx.beginPath();
         draw_triangle(ctx, p.right_eye_start, p.eye_width_x, p.eye_width_y, p.eye_rotated);
         ctx.closePath();
