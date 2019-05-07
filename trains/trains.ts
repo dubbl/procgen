@@ -1,4 +1,6 @@
-class SeededRandomSource {
+import { Water } from "./water.js";
+
+export class SeededRandomSource {
     constructor(private seed: number) {
     }
 
@@ -8,7 +10,7 @@ class SeededRandomSource {
     }
 
     public rint(min: number, max: number): number {
-        return  Math.floor((this.r() * max) + min);
+        return  Math.floor((this.r() * (max - min)) + min);
     }
 
     public rfloat(min: number, max: number): number {
@@ -17,13 +19,13 @@ class SeededRandomSource {
 
 }
 
-class Color {
+export class Color {
 
     constructor(
-        private red: number,
-        private green: number,
-        private blue: number,
-        private opacity: number = 1,
+        public red: number,
+        public green: number,
+        public blue: number,
+        public opacity: number = 1,
     ) {}
 
     public rgb() {
@@ -31,18 +33,19 @@ class Color {
     }
 }
 
-class rColor {
+export class rColor extends Color {
 
     constructor(
         private rand: SeededRandomSource,
-        private red: number = null,
-        private green: number = null,
-        private blue: number = null,
-        private opacity: number = 1,
+        public red: number = null,
+        public  green: number = null,
+        public blue: number = null,
+        public opacity: number = 1,
     ) {
-        super(seed);
-        if (this.red === null && this.red === null && this.blue === null)
+        super(red, green, blue, opacity);
+        if (this.red === null && this.red === null && this.blue === null) {
             this.random();
+        }
     }
 
     public random(
@@ -51,50 +54,56 @@ class rColor {
         b: [number, number] = [0, 255],
         a: [number, number] = [1, 1],
     ) {
-        this.red = this.rint(r[0], r[1]);
-        this.green = this.rint(g[0], g[1]);
-        this.blue = this.rint(b[0], b[1]);
-        this.opacity = this.rfloat(a[0], a[1]);
-    }
-
-    public rgb() {
-        return new Color(this.red, this.green, this.blue, this.opacity).rgb();
+        this.red = this.rand.rint(r[0], r[1]);
+        this.green = this.rand.rint(g[0], g[1]);
+        this.blue = this.rand.rint(b[0], b[1]);
+        this.opacity = this.rand.rfloat(a[0], a[1]);
     }
 }
 
-class Landscape extends Randomized implements Drawable {
+export class Landscape implements Drawable {
     public start_pos: rPos;
     public end_pos: rPos;
     private color: rColor;
-    private bezier1: rPos;
-    private bezier2: rPos;
+    private num_terrain_points: number;
+    private terrain_tension: number;
+    private terrain: rPos[];
 
-    constructor(readonly project: BridgeProject, seed: number) {
-        super(seed);
+    constructor(readonly project: BridgeProject, readonly rand: SeededRandomSource) {
         console.log('Randomized generation of landscape');
         this.randomize();
     }
 
     private randomize() {
         // track level in the lower 2/3 of the canvas
-        let height = this.project.ch - this.project.ch * this.rfloat(0.1, 0.66);
-        this.start_pos = new rPos(this.project, this.seed, 0, height)
-        this.end_pos = new rPos(this.project, this.seed, this.project.cw, height);
+        let height = this.project.ch - this.project.ch * this.rand.rfloat(0.2, 0.66);
+        this.start_pos = new rPos(this.project, this.rand, 0, height);
+        this.end_pos = new rPos(this.project, this.rand, this.project.cw, height);
         // randomize ground
-        this.color = new rColor(this.seed);
+        this.color = new rColor(this.rand);
         this.color.random([0, 150], [150, 255], [0, 150], [0.8, 1]);
-        this.bezier1 = new rPos(this.project, this.seed++);
-        this.bezier1.random([0, this.project.cw / 2], [height, this.project.ch]);
-        this.bezier2 = new rPos(this.project, this.seed++);
-        this.bezier2.random([this.project.cw / 2, this.project.cw * 0.9], [height, this.project.ch]);
         console.log(this.color.rgb());
+        // generate valley
+        this.num_terrain_points = this.rand.rint(1, 8);
+        this.terrain_tension = this.rand.rfloat(0, 1);
+        this.terrain = new Array(this.num_terrain_points + 2);
+        let side_buffer = 20;
+        this.terrain[0] = this.start_pos;
+        this.terrain[1] = this.end_pos;
+        for (let i: number = 2; i < this.num_terrain_points + 2; i++) {
+            this.terrain[i] = new rPos(this.project, this.rand);
+            this.terrain[i].random([side_buffer, this.project.cw - side_buffer], [height + 10, this.project.ch]);
+        }
+        this.terrain = this.terrain.sort((a, b) => a.x - b.x);
+        console.log(this.terrain);
     }
 
     public draw(ctx: CanvasRenderingContext2D, debug: boolean = false) {
         ctx.beginPath();
         ctx.fillStyle = this.color.rgb();
         ctx.moveTo(this.start_pos.x, this.start_pos.y);
-        ctx.bezierCurveTo(this.bezier1.x, this.bezier1.y, this.bezier2.x, this.bezier2.y, this.end_pos.x, this.end_pos.y);
+        this.drawCurve(ctx, this.terrain, this.terrain_tension);
+        ctx.lineTo(this.end_pos.x, this.end_pos.y);
         ctx.lineTo(this.project.cw, this.project.ch);
         ctx.lineTo(0, this.project.ch);
         ctx.lineTo(this.start_pos.x, this.start_pos.y);
@@ -102,23 +111,44 @@ class Landscape extends Randomized implements Drawable {
         ctx.fill();
 
         if (debug) {
-            this.bezier1.draw(ctx);
-            this.bezier2.draw(ctx);
+            this.terrain.forEach(point => {
+                point.draw(ctx);
+            });
+        }
+    }
+
+    public drawCurve(ctx: CanvasRenderingContext2D, points: rPos[], tension: number = 1) {
+        ctx.beginPath();
+        let t = tension;
+        for (var i = 0; i < points.length - 1; i++) {
+            var p0 = (i > 0) ? points[i - 1] : points[0];
+            var p1 = points[i];
+            var p2 = points[i + 1];
+            var p3 = (i != points.length - 2) ? points[i + 2] : p2;
+
+            var cp1x = p1.x + (p2.x - p0.x) / 6 * t;
+            var cp1y = p1.y + (p2.y - p0.y) / 6 * t;
+
+            var cp2x = p2.x - (p3.x - p1.x) / 6 * t;
+            var cp2y = p2.y - (p3.y - p1.y) / 6 * t;
+
+            ctx.bezierCurveTo(cp1x, cp1y, cp2x, cp2y, p2.x, p2.y);
         }
     }
 }
 
-class BridgeProject {
+export class BridgeProject {
     private readonly ctx: CanvasRenderingContext2D;
     public readonly cw: number;
     public readonly ch: number;
 
     public landscape: Landscape;
+    public water: Water;
 
     constructor(
         private readonly canvas: HTMLCanvasElement,
-        private landscape_seed: number,
-        private bridge_seed: number,
+        private landscape_rand: SeededRandomSource,
+        private bridge_rand: SeededRandomSource,
     ) {
         this.ctx = this.canvas.getContext('2d');
         this.cw = canvas.width;
@@ -126,31 +156,33 @@ class BridgeProject {
     }
 
     public randomize() {
-        this.landscape = new Landscape(this, this.landscape_seed);
+        this.landscape = new Landscape(this, this.landscape_rand);
+        this.water = new Water(this, this.landscape_rand);
     }
 
     public draw() {
         // clear entire Canvas
         this.ctx.clearRect(-1, -1, this.cw + 1, this.ch + 1);
+        this.water.draw(this.ctx, true);
         this.landscape.draw(this.ctx, true);
     }
 
 }
 
 
-class Pos implements Drawable {
+export class Pos implements Drawable {
     constructor(public x: number, public y: number) {}
 
     public draw(ctx: CanvasRenderingContext2D) {
         ctx.fillStyle = new Color(255, 0, 0).rgb();
-        ctx.fillRect(this.x - 1, this.y - 1, 3 , 3);
+        ctx.fillRect(this.x - 3, this.y - 3, 5 , 5);
     }
 }
 
-class rPos extends Randomized implements Pos {
+export class rPos extends Pos {
 
-    constructor(private project: BridgeProject, seed: number, public x: number = null, public y: number = null) {
-        super(seed);
+    constructor(private project: BridgeProject, readonly rand: SeededRandomSource, public x: number = null, public y: number = null) {
+        super(x, y);
         if (this.x === null && this.y === null) {
             this.random(
                 [this.project.ch, this.project.ch],
@@ -160,16 +192,12 @@ class rPos extends Randomized implements Pos {
     }
 
     public random(x: [number, number], y: [number, number]) {
-        this.x = this.rint(x[0], x[1]);
-        this.y = this.rint(y[0], y[1]);
-    }
-
-    public draw(ctx: CanvasRenderingContext2D) {
-        return new Pos(this.x, this.y).draw(ctx);
+        this.x = this.rand.rint(x[0], x[1]);
+        this.y = this.rand.rint(y[0], y[1]);
     }
 }
 
-interface Drawable {
+export interface Drawable {
     draw(ctx: CanvasRenderingContext2D, debug: boolean): void,
 }
 
