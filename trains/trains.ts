@@ -1,4 +1,6 @@
 import { Water } from "./water.js";
+import { Landscape } from "./landscape.js";
+import { BridgeSpan } from "./bridge_span.js";
 
 export class SeededRandomSource {
     constructor(private seed: number) {
@@ -17,6 +19,10 @@ export class SeededRandomSource {
         return this.r() * (max - min) + min;
     }
 
+    public rbool(bias: number = 0.5): boolean {
+        return this.r() < bias;
+    }
+
 }
 
 export class Color {
@@ -27,6 +33,12 @@ export class Color {
         public blue: number,
         public opacity: number = 1,
     ) {}
+
+    public darken(percentage: number = 50) {
+        this.red = this.red * percentage / 100;
+        this.green = this.green * percentage / 100;
+        this.blue = this.blue * percentage / 100;
+    }
 
     public rgb() {
         return `rgba(${this.red}, ${this.green}, ${this.blue}, ${this.opacity})`;
@@ -61,115 +73,6 @@ export class rColor extends Color {
     }
 }
 
-export class Landscape implements Drawable {
-    public start_pos: rPos;
-    public end_pos: rPos;
-    private color: rColor;
-    private num_terrain_points: number;
-    private terrain_tension: number;
-    private terrain: rPos[];
-
-    constructor(readonly project: BridgeProject, readonly rand: SeededRandomSource) {
-        console.log('Randomized generation of landscape');
-        this.randomize();
-    }
-
-    private randomize() {
-        // track level in the lower 2/3 of the canvas
-        let height = this.project.ch - this.project.ch * this.rand.rfloat(0.2, 0.66);
-        this.start_pos = new rPos(this.project, this.rand, 0, height);
-        this.end_pos = new rPos(this.project, this.rand, this.project.cw, height);
-        // randomize ground
-        this.color = new rColor(this.rand);
-        this.color.random([0, 150], [150, 255], [0, 150], [0.8, 1]);
-        console.log(this.color.rgb());
-        // generate valley
-        this.num_terrain_points = this.rand.rint(1, 8);
-        this.terrain_tension = this.rand.rfloat(0, 1);
-        this.terrain = new Array(this.num_terrain_points + 2);
-        let side_buffer = 20;
-        this.terrain[0] = this.start_pos;
-        this.terrain[1] = this.end_pos;
-        for (let i: number = 2; i < this.num_terrain_points + 2; i++) {
-            this.terrain[i] = new rPos(this.project, this.rand);
-            this.terrain[i].random([side_buffer, this.project.cw - side_buffer], [height + 10, this.project.ch]);
-        }
-        this.terrain = this.terrain.sort((a, b) => a.x - b.x);
-        console.log(this.terrain);
-    }
-
-    public draw(ctx: CanvasRenderingContext2D, debug: boolean = false) {
-        ctx.beginPath();
-        ctx.fillStyle = this.color.rgb();
-        ctx.moveTo(this.start_pos.x, this.start_pos.y);
-        this.drawCurve(ctx, this.terrain, this.terrain_tension);
-        ctx.lineTo(this.end_pos.x, this.end_pos.y);
-        ctx.lineTo(this.project.cw, this.project.ch);
-        ctx.lineTo(0, this.project.ch);
-        ctx.lineTo(this.start_pos.x, this.start_pos.y);
-        ctx.closePath();
-        ctx.fill();
-
-        if (debug) {
-            this.terrain.forEach(point => {
-                point.draw(ctx);
-            });
-        }
-    }
-
-    public drawCurve(ctx: CanvasRenderingContext2D, points: rPos[], tension: number = 1) {
-        ctx.beginPath();
-        let t = tension;
-        for (var i = 0; i < points.length - 1; i++) {
-            var p0 = (i > 0) ? points[i - 1] : points[0];
-            var p1 = points[i];
-            var p2 = points[i + 1];
-            var p3 = (i != points.length - 2) ? points[i + 2] : p2;
-
-            var cp1x = p1.x + (p2.x - p0.x) / 6 * t;
-            var cp1y = p1.y + (p2.y - p0.y) / 6 * t;
-
-            var cp2x = p2.x - (p3.x - p1.x) / 6 * t;
-            var cp2y = p2.y - (p3.y - p1.y) / 6 * t;
-
-            ctx.bezierCurveTo(cp1x, cp1y, cp2x, cp2y, p2.x, p2.y);
-        }
-    }
-}
-
-export class BridgeProject {
-    private readonly ctx: CanvasRenderingContext2D;
-    public readonly cw: number;
-    public readonly ch: number;
-
-    public landscape: Landscape;
-    public water: Water;
-
-    constructor(
-        private readonly canvas: HTMLCanvasElement,
-        private landscape_rand: SeededRandomSource,
-        private bridge_rand: SeededRandomSource,
-    ) {
-        this.ctx = this.canvas.getContext('2d');
-        this.cw = canvas.width;
-        this.ch = canvas.height;
-    }
-
-    public randomize() {
-        this.landscape = new Landscape(this, this.landscape_rand);
-        this.water = new Water(this, this.landscape_rand);
-    }
-
-    public draw() {
-        // clear entire Canvas
-        this.ctx.clearRect(-1, -1, this.cw + 1, this.ch + 1);
-        this.water.draw(this.ctx, true);
-        this.landscape.draw(this.ctx, true);
-    }
-
-}
-
-
 export class Pos implements Drawable {
     constructor(public x: number, public y: number) {}
 
@@ -195,6 +98,41 @@ export class rPos extends Pos {
         this.x = this.rand.rint(x[0], x[1]);
         this.y = this.rand.rint(y[0], y[1]);
     }
+}
+
+export class BridgeProject {
+    private readonly ctx: CanvasRenderingContext2D;
+    public readonly cw: number;
+    public readonly ch: number;
+
+    public landscape: Landscape;
+    public water: Water;
+    public bridge_span: BridgeSpan;
+
+    constructor(
+        private readonly canvas: HTMLCanvasElement,
+        private landscape_rand: SeededRandomSource,
+        private bridge_rand: SeededRandomSource,
+    ) {
+        this.ctx = this.canvas.getContext('2d');
+        this.cw = canvas.width;
+        this.ch = canvas.height;
+    }
+
+    public randomize() {
+        this.landscape = new Landscape(this, this.landscape_rand);
+        this.water = new Water(this, this.landscape_rand);
+        this.bridge_span = new BridgeSpan(this, this.bridge_rand);
+    }
+
+    public draw() {
+        // clear entire Canvas
+        this.ctx.clearRect(-1, -1, this.cw + 1, this.ch + 1);
+        this.water.draw(this.ctx, true);
+        this.landscape.draw(this.ctx, true);
+        this.bridge_span.draw(this.ctx, true);
+    }
+
 }
 
 export interface Drawable {
