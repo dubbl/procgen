@@ -1,6 +1,7 @@
 import { Water } from "./water.js";
 import { Landscape } from "./landscape.js";
 import { BridgeSpan } from "./bridge_span.js";
+import { BridgePiers } from "./bridge_piers.js";
 export class SeededRandomSource {
     constructor(seed) {
         this.seed = seed;
@@ -93,13 +94,15 @@ export class BridgeProject {
         this.landscape = new Landscape(this, this.landscape_rand);
         this.water = new Water(this, this.landscape_rand);
         this.bridge_span = new BridgeSpan(this, this.bridge_rand);
+        this.bridge_piers = new BridgePiers(this, this.bridge_rand);
     }
     draw() {
         // clear entire Canvas
         this.ctx.clearRect(-1, -1, this.cw + 1, this.ch + 1);
+        this.bridge_span.draw(this.ctx, true);
+        this.bridge_piers.draw(this.ctx, true);
         this.water.draw(this.ctx, true);
         this.landscape.draw(this.ctx, true);
-        this.bridge_span.draw(this.ctx, true);
     }
 }
 window.onload = () => {

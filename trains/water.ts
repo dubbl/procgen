@@ -22,7 +22,7 @@ export class Water implements Drawable {
             this.water_surface_color.green,
             this.water_surface_color.blue,
         );
-        let relative_depth = (this.project.ch - this.level) / this.project.ch
+        let relative_depth = (this.project.ch - this.level) / this.project.ch;
         this.water_bottom_color.darken(relative_depth);
     }
 

@@ -8,7 +8,7 @@ export class BridgeSpan {
         }
     }
     randomize(landscape) {
-        console.log('Randomized generation of Bridge Span');
+        console.log('Randomized generation of bridge span');
         this.thickness = this.rand.rint(1, 5);
         let greyness_level = this.rand.rint(0, 200);
         this.span_color = new Color(greyness_level, greyness_level, greyness_level);

@@ -5,6 +5,7 @@ export class Landscape implements Drawable {
     public end_pos: rPos;
     private color: rColor;
     private num_terrain_points: number;
+    public side_buffer: number;
     private terrain_tension: number;
     private terrain: rPos[];
 
@@ -20,29 +21,29 @@ export class Landscape implements Drawable {
         this.end_pos = new rPos(this.project, this.rand, this.project.cw, height);
         // randomize ground
         this.color = new rColor(this.rand);
-        this.color.random([0, 150], [150, 255], [0, 150], [0.8, 1]);
+        this.color.random([0, 150], [150, 255], [0, 150]);
         // generate valley
         this.num_terrain_points = this.rand.rint(1, 8);
         this.terrain_tension = this.rand.rfloat(0, 1);
         let predefined_points = 2;
         this.terrain = new Array(this.num_terrain_points + predefined_points);
-        let side_buffer = this.rand.rint(20, 50);
+        this.side_buffer = this.rand.rint(20, 50);
         this.terrain[0] = new rPos(
             this.project,
             this.rand,
-            this.start_pos.x + side_buffer,
+            this.start_pos.x + this.side_buffer,
             this.start_pos.y,
         );
         this.terrain[1] = new rPos(
             this.project,
             this.rand,
-            this.end_pos.x - side_buffer,
+            this.end_pos.x - this.side_buffer,
             this.end_pos.y,
         );
         for (let i: number = 0; i < this.num_terrain_points; i++) {
             this.terrain[i + predefined_points] = new rPos(this.project, this.rand);
             this.terrain[i + predefined_points].random(
-                [side_buffer, this.project.cw - side_buffer],
+                [this.side_buffer, this.project.cw - this.side_buffer],
                 [height + 10, this.project.ch],
             );
         }
