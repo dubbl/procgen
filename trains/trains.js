@@ -2,6 +2,7 @@ import { Water } from "./water.js";
 import { Landscape } from "./landscape.js";
 import { BridgeSpan } from "./bridge_span.js";
 import { BridgePiers } from "./bridge_piers.js";
+import { BridgeCables } from "./bridge_cables.js";
 export class SeededRandomSource {
     constructor(seed) {
         this.seed = seed;
@@ -95,22 +96,55 @@ export class BridgeProject {
         this.water = new Water(this, this.landscape_rand);
         this.bridge_span = new BridgeSpan(this, this.bridge_rand);
         this.bridge_piers = new BridgePiers(this, this.bridge_rand);
+        this.bridge_cables = new BridgeCables(this, this.bridge_rand);
     }
     draw() {
         // clear entire Canvas
         this.ctx.clearRect(-1, -1, this.cw + 1, this.ch + 1);
         this.bridge_span.draw(this.ctx, true);
+        this.bridge_cables.draw(this.ctx, true);
         this.bridge_piers.draw(this.ctx, true);
         this.water.draw(this.ctx, true);
-        this.landscape.draw(this.ctx, true);
+        this.landscape.draw(this.ctx);
     }
 }
-window.onload = () => {
+function new_seeds(landscape = true, bridge = true) {
+    let landscape_seed = new Date().getTime();
+    let bridge_seed = new Date().getTime() + 1337;
+    let given_seeds = window.location.hash.substr(1).split(',');
+    if (given_seeds.length == 2) {
+        if (!landscape) {
+            landscape_seed = parseInt(given_seeds[0], 10);
+        }
+        if (!bridge) {
+            bridge_seed = parseInt(given_seeds[1], 10);
+        }
+    }
+    window.location.hash = landscape_seed + ',' + bridge_seed;
+    init();
+}
+function init() {
     const canvas = document.getElementById('canvas');
-    let landscape_rand = new SeededRandomSource(new Date().getTime());
-    let bridge_rand = new SeededRandomSource(new Date().getTime());
-    console.log(`Generating Brige Project.`);
+    let landscape_seed = new Date().getTime();
+    let bridge_seed = new Date().getTime() + 1337;
+    let given_seeds = window.location.hash.substr(1).split(',');
+    if (given_seeds.length == 2) {
+        landscape_seed = parseInt(given_seeds[0], 10);
+        bridge_seed = parseInt(given_seeds[1], 10);
+    }
+    let landscape_rand = new SeededRandomSource(landscape_seed);
+    let bridge_rand = new SeededRandomSource(bridge_seed);
+    window.location.hash = landscape_seed + ',' + bridge_seed;
+    console.log(`Generating Brige Project with seeds ${landscape_seed} and ${bridge_seed}`);
     let project = new BridgeProject(canvas, landscape_rand, bridge_rand);
     project.randomize();
     project.draw();
-};
+}
+var new_everything = document.getElementById('btn_all');
+var new_bridge = document.getElementById('btn_bridge');
+var new_landscape = document.getElementById('btn_landscape');
+new_everything.onclick = () => new_seeds();
+new_bridge.onclick = () => new_seeds(false, true);
+new_landscape.onclick = () => new_seeds(true, false);
+window.onload = () => init();
+window.onhashchange = () => init();
