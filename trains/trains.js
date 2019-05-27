@@ -3,6 +3,8 @@ import { Landscape } from "./landscape.js";
 import { BridgeSpan } from "./bridge_span.js";
 import { BridgePiers } from "./bridge_piers.js";
 import { BridgeCables } from "./bridge_cables.js";
+import { BridgeSupport } from "./bridge_support.js";
+import { BridgeBracedFrames } from "./bridge_braced_frames.js";
 export class SeededRandomSource {
     constructor(seed) {
         this.seed = seed;
@@ -95,7 +97,9 @@ export class BridgeProject {
         this.landscape = new Landscape(this, this.landscape_rand);
         this.water = new Water(this, this.landscape_rand);
         this.bridge_span = new BridgeSpan(this, this.bridge_rand);
+        this.bridge_support = new BridgeSupport(this, this.bridge_rand);
         this.bridge_piers = new BridgePiers(this, this.bridge_rand);
+        this.bridge_braced_frames = new BridgeBracedFrames(this, this.bridge_rand);
         this.bridge_cables = new BridgeCables(this, this.bridge_rand);
     }
     draw() {
@@ -103,7 +107,9 @@ export class BridgeProject {
         this.ctx.clearRect(-1, -1, this.cw + 1, this.ch + 1);
         this.bridge_span.draw(this.ctx, true);
         this.bridge_cables.draw(this.ctx, true);
+        this.bridge_support.draw(this.ctx, true);
         this.bridge_piers.draw(this.ctx, true);
+        this.bridge_braced_frames.draw(this.ctx, true);
         this.water.draw(this.ctx, true);
         this.landscape.draw(this.ctx);
     }

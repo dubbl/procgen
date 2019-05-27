@@ -4,20 +4,18 @@ export class BridgeCables {
         this.project = project;
         this.rand = rand;
         if (this.project.landscape !== null) {
-            this.randomize(this.project.bridge_piers);
+            this.randomize(this.project.bridge_support);
         }
     }
-    randomize(piers) {
+    randomize(support) {
         console.log('Randomized generation of bridge cables');
-        if (piers.num_piers == 0 || piers.height_over_span == 0) {
-            console.log('No cables without piers over span!');
+        if (support.num_piers == 0 || support.height_over_span == 0) {
+            console.log('No cables without support over span!');
             return;
         }
         this.width = this.rand.rint(1, 3);
         this.num_cables = this.rand.rint(1, 15 - (this.width / 2));
-        console.log(piers.width * 2 + this.width * 5);
-        console.log((this.project.cw - this.project.landscape.side_buffer * 2) / (piers.num_piers + piers.invisible_piers) / (this.num_cables + 1));
-        this.spacing = this.rand.rint(piers.width * 2 + this.width * 5, Math.max((this.project.cw - this.project.landscape.side_buffer * 2) / (piers.num_piers + piers.invisible_piers) / (this.num_cables + 1), piers.width * 2 + this.width * 5));
+        this.spacing = this.rand.rint(this.width * 10, Math.max((this.project.cw - this.project.landscape.side_buffer * 2) / (support.num_piers + support.invisible_piers) / (this.num_cables + 1), this.width * 10));
         if (this.num_cables == 0)
             return;
         let greyness_lvl = this.rand.rint(5, 200);
@@ -27,15 +25,15 @@ export class BridgeCables {
         this.cable_pattern = this.rand.rint(0, 5);
         this.vertical_spacing = 0;
         if (this.rand.rbool() && this.num_cables > 1) {
-            this.vertical_spacing = piers.height_over_span / (this.num_cables);
+            this.vertical_spacing = support.height_over_span / (this.num_cables);
         }
         this.star_design = (this.rand.rbool()
             && this.vertical_spacing > 0
             && this.num_cables > 2);
     }
     draw(ctx, debug = false) {
-        for (let p = 0; p < this.project.bridge_piers.num_piers; p++) {
-            let pier_pos = this.project.bridge_piers.pier_top_pos[p];
+        for (let p = 0; p < this.project.bridge_support.num_piers; p++) {
+            let pier_pos = this.project.bridge_support.pier_top_pos[p];
             for (let i = 0; i < this.num_cables; i++) {
                 ctx.beginPath();
                 ctx.strokeStyle = this.cable_color.rgb();
