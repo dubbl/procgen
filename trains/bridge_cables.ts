@@ -39,7 +39,12 @@ export class BridgeCables implements Drawable {
         this.pattern_color = new Color(greyness_lvl, greyness_lvl, greyness_lvl);
         this.cable_pattern = this.rand.rint(0, 5);
         this.vertical_spacing = 0;
-        if (this.rand.rbool() && this.num_cables > 1) {
+        let vertical_spacing_bias = 0.5;
+        if (this.project.bridge_braced_frames.middle_line_vertical === false) {
+            // no v spacing if no middle line in braces frames as fixpoint
+            vertical_spacing_bias = 0;
+        }
+        if (this.rand.rbool(vertical_spacing_bias) && this.num_cables > 1) {
             this.vertical_spacing = support.height_over_span / (this.num_cables);
         }
         this.star_design = (
@@ -71,7 +76,6 @@ export class BridgeCables implements Drawable {
         let horizontal_i = i + 1;
         if (this.star_design) {
             horizontal_i = this.num_cables;
-            console.log('STAR DESIGN!');
         }
         ctx.moveTo(pier_pos.x, pier_pos.y + this.vertical_spacing * (this.num_cables - i - 1));
         ctx.lineTo(
